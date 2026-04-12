@@ -1,0 +1,68 @@
+<!-- Summary bar -->
+<div class="flex flex-wrap gap-4 mb-4">
+  <div class="bg-gray-800 rounded-lg px-4 py-2 text-sm">
+    <span class="text-gray-400">Total</span>
+    <span class="ml-2 font-bold text-white">{{ total_records }}</span>
+  </div>
+  <div class="bg-green-950 border border-green-800 rounded-lg px-4 py-2 text-sm">
+    <span class="text-gray-400">Survived</span>
+    <span class="ml-2 font-bold text-green-300">{{ survived_count }}</span>
+  </div>
+  <div class="bg-red-950 border border-red-800 rounded-lg px-4 py-2 text-sm">
+    <span class="text-gray-400">Not Survived</span>
+    <span class="ml-2 font-bold text-red-300">{{ not_survived_count }}</span>
+  </div>
+  <div class="bg-blue-950 border border-blue-800 rounded-lg px-4 py-2 text-sm">
+    <span class="text-gray-400">Survival Rate</span>
+    <span class="ml-2 font-bold text-blue-300">{{ "%.1f" | format(survival_rate * 100) }}%</span>
+  </div>
+</div>
+
+<!-- Results table -->
+<div class="overflow-x-auto rounded-xl border border-gray-800">
+  <table class="w-full text-sm text-left">
+    <thead class="bg-gray-800 text-gray-400 uppercase text-xs tracking-wide">
+      <tr>
+        <th class="px-4 py-3">#</th>
+        <th class="px-4 py-3">Sex</th>
+        <th class="px-4 py-3">Age</th>
+        <th class="px-4 py-3">Fare</th>
+        <th class="px-4 py-3">Prediction</th>
+        <th class="px-4 py-3">Probability</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-800">
+      {% for row in rows %}
+      <tr class="hover:bg-gray-800 transition-colors">
+        <td class="px-4 py-2 text-gray-500">{{ loop.index }}</td>
+        <td class="px-4 py-2 capitalize">{{ row.sex }}</td>
+        <td class="px-4 py-2">{{ row.age if row.age != '' else '—' }}</td>
+        <td class="px-4 py-2">{{ row.fare if row.fare != '' else '—' }}</td>
+        <td class="px-4 py-2">
+          {% if row.survived == 1 %}
+            <span class="inline-flex items-center gap-1 bg-green-900 text-green-300 text-xs font-medium px-2 py-0.5 rounded-full">
+              🟢 Survived
+            </span>
+          {% else %}
+            <span class="inline-flex items-center gap-1 bg-red-900 text-red-300 text-xs font-medium px-2 py-0.5 rounded-full">
+              🔴 Not Survived
+            </span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-2">
+          <div class="flex items-center gap-2">
+            <div class="w-20 bg-gray-700 rounded-full h-1.5">
+              <div class="{{ 'bg-green-500' if row.survived == 1 else 'bg-red-500' }} h-1.5 rounded-full"
+                   style="width: {{ (row.survival_probability * 100) | int }}%"></div>
+            </div>
+            <span class="text-xs {{ 'text-green-300' if row.survived == 1 else 'text-red-300' }}">
+              {{ "%.1f" | format(row.survival_probability * 100) }}%
+            </span>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="text-xs text-gray-500 mt-2">Model: {{ model_used }}</p>

@@ -1,0 +1,36 @@
+{% if survived == 1 %}
+<div class="flex items-start gap-4 bg-green-950 border border-green-700 rounded-xl p-4">
+  <span class="text-3xl mt-0.5">🟢</span>
+  <div class="flex-1">
+    <p class="font-semibold text-green-300 text-base">Survived</p>
+    <p class="text-sm text-gray-300 mt-0.5">
+      This passenger is predicted to have <strong>survived</strong>.
+    </p>
+    <div class="mt-3 flex items-center gap-2">
+      <span class="text-xs text-gray-400">Survival probability</span>
+      <div class="flex-1 bg-gray-800 rounded-full h-2">
+        <div class="bg-green-500 h-2 rounded-full" style="width: {{ (survival_probability * 100) | int }}%"></div>
+      </div>
+      <span class="text-sm font-bold text-green-300">{{ "%.1f" | format(survival_probability * 100) }}%</span>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="flex items-start gap-4 bg-red-950 border border-red-700 rounded-xl p-4">
+  <span class="text-3xl mt-0.5">🔴</span>
+  <div class="flex-1">
+    <p class="font-semibold text-red-300 text-base">Did Not Survive</p>
+    <p class="text-sm text-gray-300 mt-0.5">
+      This passenger is predicted to <strong>not have survived</strong>.
+    </p>
+    <div class="mt-3 flex items-center gap-2">
+      <span class="text-xs text-gray-400">Survival probability</span>
+      <div class="flex-1 bg-gray-800 rounded-full h-2">
+        <div class="bg-red-500 h-2 rounded-full" style="width: {{ (survival_probability * 100) | int }}%"></div>
+      </div>
+      <span class="text-sm font-bold text-red-300">{{ "%.1f" | format(survival_probability * 100) }}%</span>
+    </div>
+  </div>
+</div>
+{% endif %}
+<p class="text-xs text-gray-500 mt-2">Model: {{ model_used }}</p>

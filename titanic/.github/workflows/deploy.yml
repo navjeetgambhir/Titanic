@@ -1,0 +1,91 @@
+name: Build and Deploy to Azure Container Apps
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}   # e.g. myregistry.azurecr.io
+  IMAGE_NAME: titanic
+  CONTAINER_APP_NAME: titanic-app
+  RESOURCE_GROUP: titanic-rg
+
+jobs:
+  # ── 1. Run tests before building ──────────────────────────────────────────
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run pytest
+        run: uv run pytest -q
+
+  # ── 2. Build & push image to Azure Container Registry ─────────────────────
+  build:
+    name: Build and push image
+    runs-on: ubuntu-latest
+    needs: test
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Generate image tag
+        id: meta
+        run: |
+          TAG="${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.tag }}
+            ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+
+  # ── 3. Deploy to Azure Container Apps ────────────────────────────────────
+  deploy:
+    name: Deploy to Azure
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          containerAppName: ${{ env.CONTAINER_APP_NAME }}
+          imageToDeploy: ${{ needs.build.outputs.image_tag }}
+          registryUrl: ${{ env.ACR_LOGIN_SERVER }}
+          registryUsername: ${{ secrets.ACR_USERNAME }}
+          registryPassword: ${{ secrets.ACR_PASSWORD }}
+          targetPort: 8000
+          environmentVariables: |
+            OPENAI_API_KEY=secretref:openai-api-key
+            JWT_SECRET=secretref:jwt-secret
+            FERNET_KEY=secretref:fernet-key
+            HMAC_SECRET=secretref:hmac-secret
+            DB_PATH=/app/db/titanic.db
